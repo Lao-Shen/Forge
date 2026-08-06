@@ -81,5 +81,10 @@ func (u *Uploader) validateExt(name string) error {
 
 // uniqueName 生成唯一文件名（时间戳 + 原文件名）
 func (u *Uploader) uniqueName(origin string) string {
+	return UniqueName(origin)
+}
+
+// UniqueName 生成唯一文件名（导出版本，供外部使用）
+func UniqueName(origin string) string {
 	return fmt.Sprintf("%d_%s", time.Now().UnixNano(), origin)
 }
