@@ -9,8 +9,11 @@
 | 包 | 用途 | 何时用 |
 |----|------|--------|
 | [`jwt`](jwt/) | JWT token 生成/解析 | 任何需要登录鉴权的 Web 项目 |
+| [`auth`](auth/) | 注册/登录/改密/头像（bcrypt + JWT 全套） | 任何需要用户系统的项目 |
 | [`resp`](resp/) | 统一 HTTP 响应格式 | 任何提供 JSON API 的 Go 服务 |
 | [`file`](file/) | 文件上传校验 + 落盘 | 需要处理文件上传时 |
+| [`image`](image/) | 图片裁剪/缩放（头像处理） | 处理用户上传图片时 |
+| [`gormx`](gormx/) | GORM 分页等常用工具 | 任何用 GORM 的 CRUD 项目 |
 | [`ai`](ai/) | AI 服务调用统一接口 | 需要接 OpenAI / Claude 时 |
 
 ## 版本策略
