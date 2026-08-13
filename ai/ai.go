@@ -4,8 +4,8 @@ import "context"
 
 // Message 聊天消息
 type Message struct {
-	Role    string // "system" | "user" | "assistant"
-	Content string
+	Role    string `json:"role"`    // "system" | "user" | "assistant"
+	Content string `json:"content"`
 }
 
 // Client AI 客户端接口
