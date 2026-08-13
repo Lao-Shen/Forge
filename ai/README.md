@@ -50,7 +50,7 @@ func main() {
 | 字段 | 必填 | 说明 |
 |------|------|------|
 | APIKey | ✅ | `sk-` 开头的密钥 |
-| Model | ❌ | 默认 `deepseek-chat`（可选 `deepseek-reasoner`） |
+| Model | ❌ | 默认 `deepseek-v4-flash`（可选 `deepseek-v4-pro`） |
 | BaseURL | ❌ | 默认 `https://api.deepseek.com`，代理场景可覆盖 |
 
 ### 特点

@@ -27,7 +27,7 @@ type DeepSeekClient struct {
 // DeepSeekConfig DeepSeek 配置
 type DeepSeekConfig struct {
 	APIKey string // 必填，sk- 开头
-	Model  string // 默认 deepseek-chat
+	Model  string // 默认 deepseek-v4-flash（可选 deepseek-v4-pro）
 	// BaseURL 可选，默认 https://api.deepseek.com
 	// 覆盖场景：代理服务 / 兼容其他 OpenAI 格式的服务
 	BaseURL string
@@ -36,7 +36,7 @@ type DeepSeekConfig struct {
 // NewDeepSeek 创建 DeepSeek 客户端
 func NewDeepSeek(cfg DeepSeekConfig) *DeepSeekClient {
 	if cfg.Model == "" {
-		cfg.Model = "deepseek-chat"
+		cfg.Model = "deepseek-v4-flash"
 	}
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = "https://api.deepseek.com"
