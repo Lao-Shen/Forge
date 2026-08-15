@@ -14,6 +14,7 @@
 | [`file`](file/) | 文件上传校验 + 落盘 | 需要处理文件上传时 |
 | [`image`](image/) | 图片裁剪/缩放（头像处理） | 处理用户上传图片时 |
 | [`gormx`](gormx/) | GORM 分页等常用工具 | 任何用 GORM 的 CRUD 项目 |
+| [`pdesc`](pdesc/) | 项目描述文件协议（project.json 解析/收集文档） | MindVault 项目素材收集、多端同步 |
 | [`ai`](ai/) | AI 服务调用统一接口 | 需要接 OpenAI / Claude 时 |
 
 ## 版本策略
