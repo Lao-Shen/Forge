@@ -13,9 +13,24 @@
 | [`resp`](resp/) | 统一 HTTP 响应格式 | 任何提供 JSON API 的 Go 服务 |
 | [`file`](file/) | 文件上传校验 + 落盘 | 需要处理文件上传时 |
 | [`image`](image/) | 图片裁剪/缩放（头像处理） | 处理用户上传图片时 |
+| [`peicon`](peicon/) | 从 exe/dll 提取图标（导出全部 / 按尺寸导出单张） | 做启动器、文件管理器、图标素材收集时 |
 | [`gormx`](gormx/) | GORM 分页等常用工具 | 任何用 GORM 的 CRUD 项目 |
 | [`pdesc`](pdesc/) | 项目描述文件协议（project.json 解析/收集文档） | MindVault 项目素材收集、多端同步 |
 | [`ai`](ai/) | AI 服务调用统一接口 | 需要接 OpenAI / Claude 时 |
+
+## 命令行工具
+
+`cmd/` 下是可直接跑的示例程序，只用来演示对应包的用法，不参与库的对外 API。
+
+| 命令 | 说明 |
+|------|------|
+| [`cmd/peicon`](cmd/peicon/) | 从 exe/dll 提取图标，演示 [`peicon`](peicon/) 包 |
+
+```bash
+go run ./cmd/peicon -in app.exe            # 导出全部图标
+go run ./cmd/peicon -in app.exe -size 256  # 只导出 256x256
+go run ./cmd/peicon -in app.exe -list      # 只看有哪些图标
+```
 
 ## 版本策略
 
