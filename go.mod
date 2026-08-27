@@ -7,6 +7,7 @@ require github.com/golang-jwt/jwt/v5 v5.3.1
 require (
 	golang.org/x/crypto v0.55.0
 	golang.org/x/image v0.44.0
+	golang.org/x/sys v0.47.0
 	gorm.io/gorm v1.31.2
 )
 
