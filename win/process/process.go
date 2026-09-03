@@ -12,6 +12,7 @@ import (
 const (
 	QueryAccess     = windows.PROCESS_QUERY_INFORMATION
 	TerminateAccess = windows.PROCESS_TERMINATE
+	WaitAccess      = windows.SYNCHRONIZE
 )
 
 func OpenProcess(pid uint32, access uint32) (*Process, error) {

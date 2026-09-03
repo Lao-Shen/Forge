@@ -15,6 +15,15 @@ type Client interface {
 	Chat(ctx context.Context, messages []Message) (string, error)
 }
 
+// StreamClient 支持流式输出的 AI 客户端接口
+//
+// 聊天场景优先使用它：逐段回调增量文本，前端可做打字机效果。
+type StreamClient interface {
+	Client
+	// StreamChat 流式对话，每收到一段增量文本回调一次 onDelta
+	StreamChat(ctx context.Context, messages []Message, onDelta func(delta string) error) error
+}
+
 // ========== 一个最简单的调用封装 ==========
 
 // Summarize 调用 AI 对文本做摘要 + 提取标签

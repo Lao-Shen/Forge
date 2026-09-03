@@ -1,12 +1,14 @@
 package ai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -99,6 +101,73 @@ func (c *DeepSeekClient) Chat(ctx context.Context, messages []Message) (string, 
 	return result.Choices[0].Message.Content, nil
 }
 
+// StreamChat 流式对话：逐段回调 onDelta 增量文本（OpenAI 兼容 SSE 格式）
+//
+// 不设总超时（由 ctx 控制生命周期），长回复不会中途断流。
+// 实现 ai.StreamClient 接口。
+func (c *DeepSeekClient) StreamChat(ctx context.Context, messages []Message, onDelta func(delta string) error) error {
+	reqBody := chatRequest{
+		Model:    c.model,
+		Messages: messages,
+		Stream:   true,
+	}
+
+	data, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("序列化请求失败: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		c.baseURL+"/chat/completions", bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("Accept", "text/event-stream")
+
+	// 流式请求生命周期由 ctx 控制，不复用带 60s 超时的默认 client
+	streamClient := &http.Client{}
+	resp, err := streamClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("DeepSeek 返回 %d: %s", resp.StatusCode, string(body))
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 1024), 1024*1024) // 单行可能很长
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "data: [DONE]" {
+			break
+		}
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+
+		payload := strings.TrimPrefix(line, "data: ")
+		var chunk streamChunk
+		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+			continue
+		}
+		if len(chunk.Choices) == 0 || chunk.Choices[0].Delta.Content == "" {
+			continue
+		}
+		if err := onDelta(chunk.Choices[0].Delta.Content); err != nil {
+			return err
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("读取流失败: %w", err)
+	}
+	return nil
+}
+
 // ========== OpenAI 兼容格式 ==========
 
 type chatRequest struct {
@@ -112,5 +181,14 @@ type chatResponse struct {
 		Message struct {
 			Content string `json:"content"`
 		} `json:"message"`
+	} `json:"choices"`
+}
+
+// streamChunk SSE 流式响应片段（OpenAI 兼容格式）
+type streamChunk struct {
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
 	} `json:"choices"`
 }

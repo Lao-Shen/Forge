@@ -4,13 +4,15 @@ AI 服务调用的统一接口定义 + 具体实现。
 
 ## 设计思路
 
-Go 没有"类"，但有 `interface` — 它允许多个不同实现满足同一个接口。本包定义 `Client` 接口，具体实现（DeepSeek / OpenAI / Claude / 本地 Ollama）都满足 `ai.Client`。
+Go 没有"类"，但有 `interface` — 它允许多个不同实现满足同一个接口。本包定义 `Client` 接口，具体实现（DeepSeek / OpenAI / Claude / 本地 Ollama）都满足 `ai.Client`；支持流式的客户端额外实现 `ai.StreamClient`。
 
 ```
-┌─────────────────────────────┐
-│  ai.Client 接口              │
-│  Chat(ctx, []Message) string │
-└──────────┬──────────────────┘
+┌──────────────────────────────────┐
+│  ai.Client 接口                   │
+│  Chat(ctx, []Message) string      │
+│  ├─ ai.StreamClient（流式扩展）    │
+│  │  StreamChat(ctx, msgs, onDelta)│
+└──────────┬───────────────────────┘
            │
    ┌───────┼───────┬──────────┐
    ▼       ▼       ▼          ▼
@@ -42,6 +44,16 @@ func main() {
     // 3. 用于文档总结
     result, _ := ai.Summarize(context.Background(), client, docContent)
     fmt.Println(result.Summary, result.Tags)
+
+    // 4. 流式对话（打字机效果）
+    var sb strings.Builder
+    _ = client.StreamChat(context.Background(), []ai.Message{
+        {Role: "user", Content: "用三句话介绍 Go"},
+    }, func(delta string) error {
+        sb.WriteString(delta)
+        fmt.Print(delta) // 逐段输出增量文本
+        return nil
+    })
 }
 ```
 
@@ -56,7 +68,7 @@ func main() {
 ### 特点
 
 - 原生 `net/http` 实现，零额外依赖
-- 超时 60 秒
+- 普通对话超时 60 秒；流式对话不设总超时，由 `ctx` 控制生命周期（长回复不断流）
 - 非 200 响应会把错误体原文返回，方便排查
 
 ## 上层封装
@@ -68,6 +80,6 @@ func main() {
 - [x] `Client` 接口定义
 - [x] `Summarize` 上层封装
 - [x] DeepSeek 实现
+- [x] 流式输出（`StreamClient` / `StreamChat`，SSE 解析）
 - [ ] OpenAI 实现（结构相同，改 BaseURL 即可）
 - [ ] Claude 实现
-- [ ] 流式输出（SSE）
