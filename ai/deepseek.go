@@ -54,8 +54,7 @@ func NewDeepSeek(cfg DeepSeekConfig) *DeepSeekClient {
 		model:        cfg.Model,
 		baseURL:      cfg.BaseURL,
 		thinkingMode: cfg.ThinkingMode,
-		// 120s：DeepSeek 高峰期首 token 延迟可达 20~40 秒，60s 容易误伤
-		http: &http.Client{Timeout: 120 * time.Second},
+		http:         &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
