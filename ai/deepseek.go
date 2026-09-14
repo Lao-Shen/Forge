@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -55,15 +54,8 @@ func NewDeepSeek(cfg DeepSeekConfig) *DeepSeekClient {
 		model:        cfg.Model,
 		baseURL:      cfg.BaseURL,
 		thinkingMode: cfg.ThinkingMode,
-		// 120s 总超时（DeepSeek 高峰期首 token 延迟大）；连接/TLS 阶段 10s 快速失败，
-		// 网络不通（防火墙 DROP 等）时 10 秒内报错，而不是挂满总超时
-		http: &http.Client{
-			Timeout: 120 * time.Second,
-			Transport: &http.Transport{
-				DialContext:         (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
-				TLSHandshakeTimeout: 10 * time.Second,
-			},
-		},
+		// 120s：DeepSeek 高峰期首 token 延迟可达 20~40 秒，60s 容易误伤
+		http: &http.Client{Timeout: 120 * time.Second},
 	}
 }
 
