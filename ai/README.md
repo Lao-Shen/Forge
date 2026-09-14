@@ -60,6 +60,18 @@ func main() {
     searchClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-v4-flash"})
     answer, sources, _ := searchClient.WebSearch(context.Background(), "今天北京天气怎么样？")
     fmt.Println(answer, sources) // sources 为模型打开过的参考页面 URL
+
+    // 6. 思考模式流式对话：分别回调推理内容（reasoning_content）与正文
+    thinkClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-v4-flash", ThinkingMode: "enabled"})
+    _ = thinkClient.StreamChatWithThinking(context.Background(), []ai.Message{
+        {Role: "user", Content: "9.11 和 9.9 哪个大？"},
+    }, func(thinking string) error {
+        fmt.Print("[思考]" + thinking) // 推理过程（思考 token 单独计费）
+        return nil
+    }, func(delta string) error {
+        fmt.Print(delta) // 正文
+        return nil
+    })
 }
 ```
 
@@ -70,6 +82,7 @@ func main() {
 | APIKey | ✅ | `sk-` 开头的密钥 |
 | Model | ❌ | 默认 `deepseek-v4-flash`（可选 `deepseek-v4-pro`） |
 | BaseURL | ❌ | 默认 `https://api.deepseek.com`，代理场景可覆盖 |
+| ThinkingMode | ❌ | `""` 不干预（V4 服务端默认开思考）；`"disabled"` 显式关（省 token）；`"enabled"` 显式开 |
 
 ### 特点
 
