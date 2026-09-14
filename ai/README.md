@@ -54,6 +54,12 @@ func main() {
         fmt.Print(delta) // 逐段输出增量文本
         return nil
     })
+
+    // 5. 服务端联网搜索问答（Responses API + web_search 工具）
+    //    搜索在 DeepSeek 服务端执行，无需第三方搜索 key；目前仅 deepseek-v4-flash 支持
+    searchClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-v4-flash"})
+    answer, sources, _ := searchClient.WebSearch(context.Background(), "今天北京天气怎么样？")
+    fmt.Println(answer, sources) // sources 为模型打开过的参考页面 URL
 }
 ```
 
@@ -69,6 +75,7 @@ func main() {
 
 - 原生 `net/http` 实现，零额外依赖
 - 普通对话超时 60 秒；流式对话不设总超时，由 `ctx` 控制生命周期（长回复不断流）
+- 联网搜索（`WebSearch`）走 `POST /responses`（OpenAI Responses 格式），超时 120 秒；模型自主搜索/打开网页，返回回答 + 参考页面 URL（`open_page` 记录）
 - 非 200 响应会把错误体原文返回，方便排查
 
 ## 上层封装
@@ -81,5 +88,6 @@ func main() {
 - [x] `Summarize` 上层封装
 - [x] DeepSeek 实现
 - [x] 流式输出（`StreamClient` / `StreamChat`，SSE 解析）
+- [x] 服务端联网搜索（`WebSearch`，Responses API + `web_search` 工具，仅 deepseek-v4-flash）
 - [ ] OpenAI 实现（结构相同，改 BaseURL 即可）
 - [ ] Claude 实现

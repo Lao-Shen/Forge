@@ -192,3 +192,104 @@ type streamChunk struct {
 		} `json:"delta"`
 	} `json:"choices"`
 }
+
+// WebSearch 服务端联网搜索问答（Responses API + web_search 工具）
+//
+// 模型自主决定搜索词、打开网页并基于结果回答（搜索在 DeepSeek 服务端执行，无需第三方搜索 key）。
+// 注意：目前仅 deepseek-v4-flash 支持 web_search（chat/completions 端点会报 400），
+// 创建客户端时请显式传 Model: "deepseek-v4-flash"。
+//
+// 返回 answer 最终回答；sources 为模型打开过的参考页面 URL（open_page 记录，已去重）。
+func (c *DeepSeekClient) WebSearch(ctx context.Context, question string) (answer string, sources []string, err error) {
+	reqBody := map[string]interface{}{
+		"model": c.model,
+		"input": question,
+		"tools": []map[string]string{{"type": "web_search"}},
+	}
+
+	data, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", nil, fmt.Errorf("序列化请求失败: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		c.baseURL+"/responses", bytes.NewReader(data))
+	if err != nil {
+		return "", nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	// 联网搜索耗时较长（10~30 秒），用独立的 120s 超时
+	searchClient := &http.Client{Timeout: 120 * time.Second}
+	resp, err := searchClient.Do(req)
+	if err != nil {
+		return "", nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", nil, fmt.Errorf("DeepSeek 返回 %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result responsesResp
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", nil, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	// 遍历 output：收集 open_page 的 URL 作为来源；拼接 message 的 output_text 作为回答
+	var sb strings.Builder
+	seen := map[string]bool{}
+	for _, item := range result.Output {
+		switch item.Type {
+		case "web_search_call":
+			if item.Action.Type == "open_page" && item.Action.URL != "" {
+				url := cleanSourceURL(item.Action.URL)
+				if !seen[url] {
+					seen[url] = true
+					sources = append(sources, url)
+				}
+			}
+		case "message":
+			for _, part := range item.Content {
+				if part.Type == "output_text" {
+					sb.WriteString(part.Text)
+				}
+			}
+		}
+	}
+
+	if sb.Len() == 0 {
+		return "", sources, fmt.Errorf("DeepSeek 返回空响应")
+	}
+	return sb.String(), sources, nil
+}
+
+// responsesResp Responses API 响应（仅解析所需字段）
+type responsesResp struct {
+	Output []struct {
+		Type   string `json:"type"`
+		Action struct {
+			Type    string   `json:"type"`
+			Queries []string `json:"queries"`
+			URL     string   `json:"url"`
+		} `json:"action"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	} `json:"output"`
+}
+
+// cleanSourceURL 去掉 open_page URL 末尾的 #ws_call_id=... 跟踪尾巴
+func cleanSourceURL(url string) string {
+	if i := strings.Index(url, "#ws_call_id="); i >= 0 {
+		return url[:i]
+	}
+	return url
+}
