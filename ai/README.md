@@ -31,7 +31,7 @@ func main() {
     // 1. 创建客户端（API Key 在 https://platform.deepseek.com 申请）
     client := ai.NewDeepSeek(ai.DeepSeekConfig{
         APIKey: "sk-xxx",
-        Model:  "deepseek-chat",
+        Model:  "deepseek-flash",
     })
 
     // 2. 直接对话
@@ -72,6 +72,11 @@ func main() {
         fmt.Print(delta) // 正文
         return nil
     })
+
+    // 7. 查询账号可用模型列表（GET /models，OpenAI 兼容）
+    //    设置页的下拉就用它，避免在业务侧写死模型名（上游改名后会直接 400）
+    models, _ := client.ListModels(context.Background())
+    fmt.Println(models) // 如 [deepseek-flash deepseek-v4-pro]
 }
 ```
 
@@ -89,6 +94,7 @@ func main() {
 - 原生 `net/http` 实现，零额外依赖
 - 普通对话超时 60 秒；流式对话不设总超时，由 `ctx` 控制生命周期（长回复不断流）
 - 联网搜索（`WebSearch`）走 `POST /responses`（OpenAI Responses 格式），超时 120 秒；模型自主搜索/打开网页，返回回答 + 参考页面 URL（`open_page` 记录）
+- 模型列表（`ListModels`）走 `GET /models`，兼容 `{data:[{id}]}` / `{models:[...]}` / `["..."]` 三种返回形态
 - 非 200 响应会把错误体原文返回，方便排查
 
 ## 上层封装
@@ -102,5 +108,6 @@ func main() {
 - [x] DeepSeek 实现
 - [x] 流式输出（`StreamClient` / `StreamChat`，SSE 解析）
 - [x] 服务端联网搜索（`WebSearch`，Responses API + `web_search` 工具，仅 deepseek-flash）
+- [x] 模型列表查询（`ListModels`，`GET /models`）
 - [ ] OpenAI 实现（结构相同，改 BaseURL 即可）
 - [ ] Claude 实现

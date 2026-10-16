@@ -58,6 +58,59 @@ func NewDeepSeek(cfg DeepSeekConfig) *DeepSeekClient {
 	}
 }
 
+// ListModels 查询账号可用的模型列表（GET /models，OpenAI 兼容格式）
+//
+//	返回 data[].id（保持上游顺序），供调用方渲染模型选择器，
+//	避免在业务侧写死模型名——上游改名后写死的名字会直接 400。
+//	兼容 {data:[{id}]} / {models:[...]} / ["..."] 三种返回形态。
+func (c *DeepSeekClient) ListModels(ctx context.Context) ([]string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/models", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("DeepSeek 返回 %d: %s", resp.StatusCode, string(body))
+	}
+
+	// OpenAI 兼容：{"object":"list","data":[{"id":"deepseek-flash",...}]}
+	var obj struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+		Models []string `json:"models"`
+	}
+	if err := json.Unmarshal(body, &obj); err == nil {
+		ids := make([]string, 0, len(obj.Data)+len(obj.Models))
+		for _, m := range obj.Data {
+			if id := strings.TrimSpace(m.ID); id != "" {
+				ids = append(ids, id)
+			}
+		}
+		ids = append(ids, obj.Models...)
+		if len(ids) > 0 {
+			return ids, nil
+		}
+	}
+	// 兜底：直接是字符串数组
+	var arr []string
+	if err := json.Unmarshal(body, &arr); err == nil && len(arr) > 0 {
+		return arr, nil
+	}
+	return nil, fmt.Errorf("解析模型列表失败: %s", string(body))
+}
+
 // Chat 发送对话，返回 AI 回复文本
 //
 // 实现 ai.Client 接口，可直接用于 Summarize 等封装。
