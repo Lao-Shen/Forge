@@ -56,13 +56,13 @@ func main() {
     })
 
     // 5. 服务端联网搜索问答（Responses API + web_search 工具）
-    //    搜索在 DeepSeek 服务端执行，无需第三方搜索 key；目前仅 deepseek-v4-flash 支持
-    searchClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-v4-flash"})
+    //    搜索在 DeepSeek 服务端执行，无需第三方搜索 key；目前仅 flash 系模型（deepseek-flash）支持
+    searchClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-flash"})
     answer, sources, _ := searchClient.WebSearch(context.Background(), "今天北京天气怎么样？")
     fmt.Println(answer, sources) // sources 为模型打开过的参考页面 URL
 
     // 6. 思考模式流式对话：分别回调推理内容（reasoning_content）与正文
-    thinkClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-v4-flash", ThinkingMode: "enabled"})
+    thinkClient := ai.NewDeepSeek(ai.DeepSeekConfig{APIKey: "sk-xxx", Model: "deepseek-flash", ThinkingMode: "enabled"})
     _ = thinkClient.StreamChatWithThinking(context.Background(), []ai.Message{
         {Role: "user", Content: "9.11 和 9.9 哪个大？"},
     }, func(thinking string) error {
@@ -80,7 +80,7 @@ func main() {
 | 字段 | 必填 | 说明 |
 |------|------|------|
 | APIKey | ✅ | `sk-` 开头的密钥 |
-| Model | ❌ | 默认 `deepseek-v4-flash`（可选 `deepseek-v4-pro`） |
+| Model | ❌ | 默认 `deepseek-flash`（可选 `deepseek-v4-pro`） |
 | BaseURL | ❌ | 默认 `https://api.deepseek.com`，代理场景可覆盖 |
 | ThinkingMode | ❌ | `""` 不干预（V4 服务端默认开思考）；`"disabled"` 显式关（省 token）；`"enabled"` 显式开 |
 
@@ -101,6 +101,6 @@ func main() {
 - [x] `Summarize` 上层封装
 - [x] DeepSeek 实现
 - [x] 流式输出（`StreamClient` / `StreamChat`，SSE 解析）
-- [x] 服务端联网搜索（`WebSearch`，Responses API + `web_search` 工具，仅 deepseek-v4-flash）
+- [x] 服务端联网搜索（`WebSearch`，Responses API + `web_search` 工具，仅 deepseek-flash）
 - [ ] OpenAI 实现（结构相同，改 BaseURL 即可）
 - [ ] Claude 实现

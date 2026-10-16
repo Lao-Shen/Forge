@@ -30,7 +30,7 @@ type DeepSeekClient struct {
 // DeepSeekConfig DeepSeek 配置
 type DeepSeekConfig struct {
 	APIKey string // 必填，sk- 开头
-	Model  string // 默认 deepseek-v4-flash（可选 deepseek-v4-pro）
+	Model  string // 默认 deepseek-flash（可选 deepseek-v4-pro）
 	// BaseURL 可选，默认 https://api.deepseek.com
 	// 覆盖场景：代理服务 / 兼容其他 OpenAI 格式的服务
 	BaseURL string
@@ -44,7 +44,7 @@ type DeepSeekConfig struct {
 // NewDeepSeek 创建 DeepSeek 客户端
 func NewDeepSeek(cfg DeepSeekConfig) *DeepSeekClient {
 	if cfg.Model == "" {
-		cfg.Model = "deepseek-v4-flash"
+		cfg.Model = "deepseek-flash"
 	}
 	if cfg.BaseURL == "" {
 		cfg.BaseURL = "https://api.deepseek.com"
@@ -241,8 +241,8 @@ type streamChunk struct {
 // WebSearch 服务端联网搜索问答（Responses API + web_search 工具）
 //
 // 模型自主决定搜索词、打开网页并基于结果回答（搜索在 DeepSeek 服务端执行，无需第三方搜索 key）。
-// 注意：目前仅 deepseek-v4-flash 支持 web_search（chat/completions 端点会报 400），
-// 创建客户端时请显式传 Model: "deepseek-v4-flash"。
+// 注意：目前仅 flash 系模型（deepseek-flash）支持 web_search（chat/completions 端点会报 400），
+// 创建客户端时请显式传 Model: "deepseek-flash"。
 //
 // 返回 answer 最终回答；sources 为模型打开过的参考页面 URL（open_page 记录，已去重）。
 func (c *DeepSeekClient) WebSearch(ctx context.Context, question string) (answer string, sources []string, err error) {
